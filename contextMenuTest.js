@@ -17,32 +17,37 @@
         }
     }
 
-    // Function to get artist banner/header image from the Spotify API
-    async function getArtistBanner(artistUri) {
-        try {
-            const artistData = await Spicetify.CosmosAsync.get(`https://api.spotify.com/v1/artists/${artistUri.id}`);
-            if (artistData.images && artistData.images.length > 0) {
-                const bannerUrl = artistData.images[0].url; // Use the first image as the banner
-                if (bannerUrl) {
-                    console.log("Banner URL found:", bannerUrl);
-                    return bannerUrl; // Return the URL of the banner
+    // Function to get artist banner/header image from the DOM
+    function getArtistBanner() {
+        const bannerSelector = '.main-view-container .under-main-view > div > div'; // Refined selector
+        const bannerElement = document.querySelector(bannerSelector);
+
+        if (bannerElement) {
+            const style = window.getComputedStyle(bannerElement);
+            const backgroundImage = style.backgroundImage;
+
+            if (backgroundImage) {
+                const urlMatch = backgroundImage.match(/url\("?(.*?)"?\)/);
+                if (urlMatch && urlMatch[1]) {
+                    console.log("Banner URL found:", urlMatch[1]); // Log the URL for debugging
+                    return urlMatch[1]; // Return the URL of the banner
                 }
             }
-        } catch (error) {
-            console.error("Failed to fetch artist banner:", error);
         }
-        console.error("No artist banner URL found.");
+
+        console.error("No artist banner URL found in the DOM.");
         return null; // Return null if no banner is found
     }
 
-    // Function to get artist profile picture URL from the Spotify API
+    // Function to get artist profile picture URL using Spotify API
     async function getArtistProfilePicture(artistUri) {
+        const artistId = Spicetify.URI.fromString(artistUri).id; // Get the artist ID from the URI
         try {
-            const artistData = await Spicetify.CosmosAsync.get(`https://api.spotify.com/v1/artists/${artistUri.id}`);
-            if (artistData.images && artistData.images.length > 0) {
-                const profilePictureUrl = artistData.images[0].url; // Use the first image as the profile picture
-                console.log("Profile picture URL found:", profilePictureUrl);
-                return profilePictureUrl; // Return the URL of the profile picture
+            const artistData = await Spicetify.CosmosAsync.get(`https://api.spotify.com/v1/artists/${artistId}`);
+            const profilePicUrl = artistData.images[0]?.url; // Get the first image URL
+            if (profilePicUrl) {
+                console.log("Profile picture URL found:", profilePicUrl); // Log the URL for debugging
+                return profilePicUrl; // Return the URL of the profile picture
             }
         } catch (error) {
             console.error("Failed to fetch artist profile picture:", error);
@@ -126,23 +131,17 @@
             }),
             new Spicetify.ContextMenu.Item("Open Banner", async () => {
                 console.log("Attempting to get artist banner URL..."); // Log before calling
-                const artistBannerUrl = await getArtistBanner(artistUri); // Use the API function here
+                const artistBannerUrl = getArtistBanner(); // Use the scraping function here
                 if (artistBannerUrl) {
                     console.log("Opening banner URL:", artistBannerUrl); // Log the URL being opened
                     window.open(artistBannerUrl, "_blank");
                 } else {
                     console.error("No artist banner URL found.");
-                    Spicetify.showNotification("No banner detected for this artist."); // Notify when no banner is found
                 }
             }),
             new Spicetify.ContextMenu.Item("Copy Banner URL", async () => {
-                const artistBannerUrl = await getArtistBanner(artistUri); // Use the API function here
-                if (artistBannerUrl) {
-                    await copyUrlToClipboard(artistBannerUrl);
-                } else {
-                    console.error("No artist banner URL found.");
-                    Spicetify.showNotification("No banner detected for this artist."); // Notify when no banner is found
-                }
+                const artistBannerUrl = getArtistBanner(); // Use the scraping function here
+                if (artistBannerUrl) await copyUrlToClipboard(artistBannerUrl);
             }),
         ], (selected) => {
             const uri = Spicetify.URI.fromString(selected[0]);
@@ -164,7 +163,7 @@
 
         if (uri && uri.type === Spicetify.URI.Type.ARTIST) {
             console.log("Detected artist page:", uri.id);
-            createArtistContextMenu(uri); // Pass the full URI object instead of just the ID
+            createArtistContextMenu(pathname); // Pass the full pathname instead of just the ID
         } else {
             // If leaving an artist page, deregister artist menu
             if (artistMenu) {
@@ -181,6 +180,6 @@
 
     if (initialUri && initialUri.type === Spicetify.URI.Type.ARTIST) {
         console.log("Detected initial artist page:", initialUri.id);
-        createArtistContextMenu(initialUri); // Pass the full URI object instead of just the ID
+        createArtistContextMenu(initialPath); // Pass the full pathname instead of just the ID
     }
 })();
