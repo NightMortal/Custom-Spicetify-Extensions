@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Spotify Image Opener",
+    "description": "Access album art, artist photos, and more with right-click context menus.",
+    "preview": "Spotify_Image_Opener/screenshot.png",
+    "main": "Spotify_Image_Opener/Spotify_Image_Opener.js",
+    "readme": "Spotify_Image_Opener/README.md",
+    "authors": [
+      {
+        "name": "NightMortal",
+        "url": "https://github.com/NightMortal"
+      }
+    ],
+    "tags": ["image", "context-menu", "album-art", "artist", "utility"]
+  }
+]
