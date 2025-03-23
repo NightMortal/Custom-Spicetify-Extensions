@@ -1,3 +1,8 @@
+// NAME: Spotify Image Opener
+// AUTHOR: NightMortal
+// DESCRIPTION: Access album art, artist photos, and more with right-click context menus.
+// VERSION: 1.0.0
+
 (async () => {
     // Wait for Spicetify to be ready
     while (
@@ -263,10 +268,27 @@
         }
     }
 
-    // Function to add context menu to gallery images
+    // Function to add context menu to gallery images with enhanced carousel support
     function addGalleryImageContextMenu() {
-        const galleryImageSelector = '.main-entityAbout-gallery img';
-        const galleryImages = document.querySelectorAll(galleryImageSelector);
+        // Multiple selectors to catch all possible gallery images
+        const galleryImageSelectors = [
+            '.main-entityAbout-gallery img',
+            '.main-aboutArtist-container img',
+            '.main-aboutArtist-carouselImage img',
+            '.main-aboutArtist-carousel img',
+            '.artist-artistAbout-carousel img',
+            '.artist-artistAbout-carouselImage img'
+        ];
+        
+        // Find all gallery images using our selectors
+        let galleryImages = [];
+        galleryImageSelectors.forEach(selector => {
+            const images = document.querySelectorAll(selector);
+            if (images.length > 0) {
+                galleryImages = [...galleryImages, ...images];
+                console.log(`Found ${images.length} images using selector: ${selector}`);
+            }
+        });
 
         if (galleryImages.length > 0) {
             galleryImages.forEach(img => {
@@ -285,44 +307,217 @@
                         }),
                         new Spicetify.ContextMenu.Item("Copy Image URL", async () => {
                             await copyUrlToClipboard(imageUrl);
+                        }),
+                        new Spicetify.ContextMenu.Item("Download Image", () => {
+                            const a = document.createElement('a');
+                            a.href = imageUrl;
+                            a.download = `artist-photo-${Date.now()}.jpg`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            Spicetify.showNotification("Download started!");
                         })
                     ]);
                     menu.show(event.clientX, event.clientY);
                 };
 
                 img.addEventListener('contextmenu', img._galleryContextMenuHandler);
+                
+                // Make the image have a hover effect to indicate it can be interacted with
+                img.style.cursor = 'pointer';
             });
-            console.log("Gallery image context menus added.");
+            console.log("Gallery image context menus added to all images.");
         } else {
             console.log("No gallery images found.");
         }
+        
+        // Add handlers for carousel navigation buttons to re-apply context menus after navigation
+        const carouselButtons = document.querySelectorAll('.main-aboutArtist-carouselButton, .artist-artistAbout-carouselButton');
+        carouselButtons.forEach(button => {
+            if (!button._carouselButtonHandler) {
+                button._carouselButtonHandler = () => {
+                    // Wait for new images to load
+                    setTimeout(addGalleryImageContextMenu, 200);
+                };
+                button.addEventListener('click', button._carouselButtonHandler);
+            }
+        });
+    }
+    
+    // Function to add context menu to About Me text
+    function addAboutMeTextContextMenu() {
+        const aboutTextSelectors = [
+            '.main-aboutArtist-content p',
+            '.main-entityAbout-content p',
+            '.artist-artistAbout-content p',
+            '.main-aboutArtist-text',
+            '.main-entityAbout-text'
+        ];
+        
+        let aboutTextElements = [];
+        aboutTextSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            if (elements.length > 0) {
+                aboutTextElements = [...aboutTextElements, ...elements];
+            }
+        });
+        
+        if (aboutTextElements.length > 0) {
+            aboutTextElements.forEach(element => {
+                if (element._aboutTextContextMenuHandler) {
+                    element.removeEventListener('contextmenu', element._aboutTextContextMenuHandler);
+                }
+                
+                element._aboutTextContextMenuHandler = function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    const textContent = element.textContent.trim();
+                    const menu = new Spicetify.ContextMenu.SubMenu("", [
+                        new Spicetify.ContextMenu.Item("Copy Text", async () => {
+                            await copyUrlToClipboard(textContent);
+                            Spicetify.showNotification("About Me text copied to clipboard!");
+                        })
+                    ]);
+                    menu.show(event.clientX, event.clientY);
+                };
+                
+                element.addEventListener('contextmenu', element._aboutTextContextMenuHandler);
+                element.style.cursor = 'default';
+            });
+            console.log("About Me text context menus added.");
+        } else {
+            console.log("No About Me text elements found.");
+        }
     }
 
-    // Observe for changes in the 'About' section to add gallery image context menus
+    // Enhanced observer for About section to handle all dynamic content
     function observeAboutSection() {
-        const targetNode = document.querySelector('.main-view-container__scroll-node-child');
+        const targetNodes = [
+            '.main-view-container__scroll-node-child',
+            '.main-view-container',
+            '.contentSpacing',
+            '.artist-artistOverview-overview',
+            '.main-aboutArtist-container'
+        ].map(selector => document.querySelector(selector)).filter(Boolean);
 
-        if (!targetNode) {
-            console.log("Target node for observing 'About' section not found.");
+        if (targetNodes.length === 0) {
+            console.log("Target nodes for observing 'About' section not found.");
             return;
         }
 
+        // Create a single observer to handle all changes
         const observer = new MutationObserver(() => {
-            const isAboutSection = document.querySelector('.main-entityAbout-container');
-            if (isAboutSection) {
+            const aboutSectionSelectors = [
+                '.main-entityAbout-container',
+                '.main-aboutArtist-container',
+                '.artist-artistAbout-container'
+            ];
+            
+            // Check if any About section exists
+            const isAboutSectionVisible = aboutSectionSelectors.some(
+                selector => document.querySelector(selector)
+            );
+            
+            if (isAboutSectionVisible) {
+                // Apply context menus to all possible components
                 addGalleryImageContextMenu();
+                addAboutMeTextContextMenu();
+                
+                // Look for carousel navigation to enable photo selection
+                setupPhotoCarouselInteraction();
             }
         });
 
-        observer.observe(targetNode, { childList: true, subtree: true });
-        console.log("Observing DOM changes for 'About' section...");
+        // Apply observers to all found target nodes
+        targetNodes.forEach(targetNode => {
+            observer.observe(targetNode, { 
+                childList: true, 
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class', 'style']
+            });
+        });
+        
+        console.log("Observing DOM changes for 'About' section with enhanced detection...");
+    }
+    
+    // Function to setup interaction with photo carousel/slideshow
+    function setupPhotoCarouselInteraction() {
+        const carouselSelectors = [
+            '.main-aboutArtist-carousel',
+            '.artist-artistAbout-carousel',
+            '.main-entityAbout-gallery'
+        ];
+        
+        carouselSelectors.forEach(selector => {
+            const carousel = document.querySelector(selector);
+            if (carousel) {
+                // Look for navigation dots if they exist
+                const carouselDots = carousel.querySelectorAll('.main-aboutArtist-carouselDot, .artist-artistAbout-carouselDot');
+                if (carouselDots.length > 0) {
+                    carouselDots.forEach((dot, index) => {
+                        // Add click event to ensure context menu is refreshed after selection
+                        if (!dot._dotClickHandler) {
+                            dot._dotClickHandler = () => {
+                                console.log(`Selecting photo ${index + 1}`);
+                                // Re-apply context menus after photo changes
+                                setTimeout(addGalleryImageContextMenu, 200);
+                            };
+                            dot.addEventListener('click', dot._dotClickHandler);
+                        }
+                    });
+                    console.log(`Found ${carouselDots.length} carousel navigation dots.`);
+                }
+                
+                // Look for next/prev buttons
+                const navButtons = carousel.querySelectorAll('button');
+                navButtons.forEach(button => {
+                    if (!button._navButtonHandler) {
+                        button._navButtonHandler = () => {
+                            setTimeout(addGalleryImageContextMenu, 200);
+                        };
+                        button.addEventListener('click', button._navButtonHandler);
+                    }
+                });
+            }
+        });
     }
 
-    // Initial setup
-    addAlbumArtContextMenu();
-    observeAboutSection();
+    // Enhanced initial setup with the new functionality
+    function initialSetup() {
+        addAlbumArtContextMenu();
+        observeAboutSection();
+        
+        // Initial check for About section
+        const aboutSectionSelectors = [
+            '.main-entityAbout-container',
+            '.main-aboutArtist-container',
+            '.artist-artistAbout-container'
+        ];
+        
+        if (aboutSectionSelectors.some(selector => document.querySelector(selector))) {
+            addGalleryImageContextMenu();
+            addAboutMeTextContextMenu();
+            setupPhotoCarouselInteraction();
+        }
+    }
+    
+    // Replace the original initialization with our enhanced version
+    initialSetup();
 
     // Re-add context menu when the album art changes
     Spicetify.Player.addEventListener("songchange", addAlbumArtContextMenu);
+
+    // Additional observer to catch all page changes
+    const bodyObserver = new MutationObserver((mutations) => {
+        // Look for changes that might indicate new content being loaded
+        if (mutations.some(m => m.addedNodes.length > 0 || m.attributeName === 'class')) {
+            if (document.querySelector('.artist-artistAbout-container, .main-aboutArtist-container')) {
+                initialSetup();
+            }
+        }
+    });
+    bodyObserver.observe(document.body, { childList: true, subtree: true, attributes: true });
 
 })();
