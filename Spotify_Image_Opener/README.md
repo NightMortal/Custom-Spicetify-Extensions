@@ -1,4 +1,4 @@
-# Spotify Image Opener
+# Image Opener
 
 > Access album art, artist photos, and more with right-click context menus
 
@@ -27,7 +27,7 @@
 
 ### Manual Installation
 
-1. Download `Spotify_Image_Opener.js` to your Spicetify extensions folder:
+1. Download `Image_Opener.js` to your Spicetify extensions folder:
    - Windows: `%appdata%\spicetify\Extensions\`
    - Linux: `~/.config/spicetify/Extensions/`
    - MacOS: `~/.config/spicetify/Extensions/`
