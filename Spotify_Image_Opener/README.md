@@ -23,7 +23,7 @@
 1. Install [Spicetify](https://spicetify.app/)
 2. Install [Spicetify Marketplace](https://github.com/spicetify/spicetify-marketplace)
 3. Open Spotify and navigate to Marketplace
-4. Search for "Spotify Image Opener" and click Install
+4. Search for "Image Opener" and click Install
 
 ### Manual Installation
 
