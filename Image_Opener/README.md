@@ -38,6 +38,18 @@
    spicetify apply
    ```
 
+### One-line Installation
+
+For MacOS/Linux:
+```bash
+curl -fsSL https://raw.githubusercontent.com/NightMortal/Custom-Spicetify-Extensions/main/Image_Opener/install.sh | bash
+```
+
+For Windows (PowerShell):
+```powershell
+iwr -useb https://raw.githubusercontent.com/NightMortal/Custom-Spicetify-Extensions/main/Image_Opener/install.ps1 | iex
+```
+
 ## Usage
 
 Simply right-click on images or content you want to interact with:
