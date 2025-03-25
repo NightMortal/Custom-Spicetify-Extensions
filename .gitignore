@@ -3,5 +3,6 @@ Image_Opener/SHOWCASE.md
 Image_Opener/screenshot_title.png
 Image_Opener/screenshot_now_playing.png
 
-# Keep main screenshots accessible
-# Do NOT add screenshot.png or screenshot_banner.png here
+# Prevent re-tracking of removed images
+Image_Opener/screenshot_title.png
+Image_Opener/screenshot_now_playing.png
